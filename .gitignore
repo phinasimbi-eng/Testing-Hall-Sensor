@@ -1,0 +1,75 @@
+# Top-level gitignore for N32G430 embedded project
+# Ignore build artifacts and IDE/project files that shouldn't be pushed
+
+# Keil/MDK-ARM / RVMDK
+RVMDK/**/Obj/
+RVMDK/**/DebugConfig/
+RVMDK/**/List/
+RVMDK/**/JLinkLog.txt
+RVMDK/**/JLinkSettings.ini
+RVMDK/**/EventRecorderStub.scvd
+
+# Keil project files (user-specific/backups)
+*.uvoptx
+*.uvprojx
+*.uvguix*
+*.uvprojx.*
+*.uvoptx.*
+
+# Common build outputs
+*.axf
+*.elf
+*.hex
+*.bin
+*.map
+*.o
+*.d
+*.lst
+
+# Static libraries / intermediate libs
+*.a
+*.lib
+
+# Compiler/linker generated folders
+build/
+bin/
+out/
+obj/
+
+# IDE/editor/project files
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sdf
+*.opensdf
+_UpgradeReport_Files/
+*.VC.db
+*.log
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Backup files
+*~
+*.swp
+*.tmp
+
+# Serial logs, export files, programmer dumps
+*.binlog
+*.log
+*.dump
+
+# Personal notes
+*.local
+
+# If you generate documentation or other artifacts, ignore common folders
+/docs/_build/
+
+# End of .gitignore

@@ -1,0 +1,63 @@
+# Ignore build artifacts and object files
+Obj/
+*.axf
+*.lnp
+*.sct
+*.crf
+*.d
+*.o
+*.map
+
+# Keil/ARM project files (user-specific/workspace)
+*.uvoptx
+*.uvprojx
+*.uvguix*
+*.uvprojx.*
+*.uvoptx.*
+
+# Debug and logs
+JLinkLog.txt
+JLinkSettings.ini
+EventRecorderStub.scvd
+*.log
+build_log.htm
+
+# Backup and temp files
+*~
+*.tmp
+*.swp
+*.swo
+*.bak
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Editor/IDE
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Python
+__pycache__/
+*.pyc
+
+# Binary blobs / libraries
+lib/
+
+# If any packed or generated archives
+*.zip
+*.tar
+*.gz
+
+# User-specific files
+*.user
+
+# Ignore final firmware images if you don't want them in repo
+*.bin
+*.hex
+
+# Keep repository metadata but ignore local coverage/reports
+coverage/
+reports/
