@@ -72,4 +72,7 @@ Desktop.ini
 # If you generate documentation or other artifacts, ignore common folders
 /docs/_build/
 
+# Backup of nested .git directories created during import
+.nested_git_backups/
+
 # End of .gitignore
