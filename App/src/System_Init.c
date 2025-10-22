@@ -40,155 +40,155 @@
 extern Motor_Obj motor_I[2];
 extern uint8_t RxBuffer1[BUFFSIZE];
 extern RecvFrame mRecvFrame;
-extern void MotorPwm_Foc_Isr(uint8_t num,Motor_Obj *Obj,SystemInterface_Obj *InfObj);
-// ÏµÍ³²ã½á¹¹ÌåÉùÃ÷
+extern void MotorPwm_Foc_Isr(uint8_t num, Motor_Obj *Obj, SystemInterface_Obj *InfObj);
+// ÏµÍ³ï¿½ï¿½á¹¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 static System_Obj SystemObj[2];
 SystemInterface_Obj SystemInterfaceObj[2];
 
 void System_Init(void);
 static void Var_Init(void);
-void MotorMain_Circle(void);  // 2ms¶¨Ê±º¯ÊýA
-uint16_t  ADC_ConvertedValue[2][ADC_CHANNEL_Number];
-uint16_t* address_adc_value[2];
+void MotorMain_Circle(void); // 2msï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½A
+uint16_t ADC_ConvertedValue[2][ADC_CHANNEL_Number];
+uint16_t *address_adc_value[2];
 
 __IO uint16_t ADC_RegularConvertedValueTab[8];
 __IO uint16_t ADC_InjectedConvertedValueTab[4];
 __IO uint16_t PWM_CcSet[3];
 
 // ========================================================================
-// º¯ÊýÃû³Æ£ºSystem_Init
-// ÊäÈë²ÎÊý£ºÎÞ
-// Êä³ö²ÎÊý£ºÎÞ
-// ÉÈ    Èë£ºÎÞ
-// ÉÈ    ³ö£ºÎÞ
-// º¯ÊýÃèÊö£ºÏµÍ³³õÊ¼»¯
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ£ï¿½System_Init
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½    ï¿½ë£ºï¿½ï¿½
+// ï¿½ï¿½    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÏµÍ³ï¿½ï¿½Ê¼ï¿½ï¿½
 // ========================================================================
 void System_Init()
-{    
+{
     FLASH_Latency_Set(FLASH_LATENCY_2);
     FLASH_Prefetch_Buffer_Enable();
     FLASH_ICache_Enable();
-    
-    #define DGB_TIM1_STOP (1<<10)
-    #define DGB_TIM8_STOP (1<<17)
-    uint32_t *p = (uint32_t*)0xE0042004;
+
+#define DGB_TIM1_STOP (1 << 10)
+#define DGB_TIM8_STOP (1 << 17)
+    uint32_t *p = (uint32_t *)0xE0042004;
     *p |= DGB_TIM1_STOP;
     *p |= DGB_TIM8_STOP;
-    
+
     SystemClk_Init();
     __disable_irq();
     system_tick_init();
     Gpio_Init();
     Pwm_Init();
     Adc_Init();
-		#ifdef SPI_SEND		
-		TIM3_Init();
-		#endif		
-		#ifdef UART_SEND	
+#ifdef SPI_SEND
+    TIM3_Init();
+#endif
+#ifdef UART_SEND
     Uart_init();
-		#endif	
-		#ifdef SPI_SEND	
-		Spi_init();
-		#endif	
+#endif
+#ifdef SPI_SEND
+    Spi_init();
+#endif
     Var_Init();
 
     __enable_irq();
 }
 
-int16_t DoKeyEvent(uint16_t *incCnt,uint8_t *KeySate,uint16_t newKeyStatus)
+int16_t DoKeyEvent(uint16_t *incCnt, uint8_t *KeySate, uint16_t newKeyStatus)
 {
-    switch(*KeySate)
+    switch (*KeySate)
     {
-        case 0:
-            if(newKeyStatus == 1)
+    case 0:
+        if (newKeyStatus == 1)
+        {
+            if ((*incCnt)++ > 300)
             {
-                if((*incCnt)++ > 300)
-                {
-                    *incCnt = 0;
-                    *KeySate = 1;
-                }
-            }
-            else
                 *incCnt = 0;
-            break;
-        case 1:
-            if(newKeyStatus == 0)
+                *KeySate = 1;
+            }
+        }
+        else
+            *incCnt = 0;
+        break;
+    case 1:
+        if (newKeyStatus == 0)
+        {
+            if ((*incCnt)++ > 300)
             {
-                if((*incCnt)++ > 300)
-                {
-                    *incCnt = 0;
-                    *KeySate = 0;
-                    return 1;
-                }
-            }
-            else
                 *incCnt = 0;
-            break;
+                *KeySate = 0;
+                return 1;
+            }
+        }
+        else
+            *incCnt = 0;
+        break;
     }
     return 0;
 }
 int16_t GetKeyEventStart(void)
 {
     static uint16_t incCnt = 0;
-    static uint8_t KeySate=0;
+    static uint8_t KeySate = 0;
     uint16_t newKeyStatus = GetIO_Button1();
-    return DoKeyEvent(&incCnt,&KeySate,newKeyStatus);
+    return DoKeyEvent(&incCnt, &KeySate, newKeyStatus);
 }
 // ========================================================================
-// º¯ÊýÃû³Æ£ºSpeedGiven
-// ÊäÈë²ÎÊý£ºÎÞ
-// Êä³ö²ÎÊý£ºÎÞ
-// ÉÈ    Èë£ºÎÞ
-// ÉÈ    ³ö£ºÎÞ
-// º¯ÊýÃèÊö£ºËÙ¶È¸ø¶¨º¯Êý
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ£ï¿½SpeedGiven
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½    ï¿½ë£ºï¿½ï¿½
+// ï¿½ï¿½    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ù¶È¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 // ========================================================================
 void SpeedGiven(void)
 {
-		int32_t Speed_Target = SystemObj[0].SpeedValue*MTR_VOLT_RPM;
-		static int32_t SpeedFilter = 0;			
-	  SpeedFilter = Speed_Target;
-		//ËÙ¶È¸³Öµ
+    int32_t Speed_Target = SystemObj[0].SpeedValue * MTR_VOLT_RPM;
+    static int32_t SpeedFilter = 0;
+    SpeedFilter = Speed_Target;
+    // ï¿½Ù¶È¸ï¿½Öµ
 
-		if(SpeedFilter < MTR_MINRPM)
-		{
-			SpeedFilter = MTR_MINRPM;
-		}
-		
-		if(SpeedFilter > MTR_MAXRPM)
-		{
-			SpeedFilter = MTR_MAXRPM;
-		}
-		
-    SpeedControl(0,SpeedFilter);	
+    if (SpeedFilter < MTR_MINRPM)
+    {
+        SpeedFilter = MTR_MINRPM;
+    }
+
+    if (SpeedFilter > MTR_MAXRPM)
+    {
+        SpeedFilter = MTR_MAXRPM;
+    }
+
+    SpeedControl(0, SpeedFilter);
 }
 // ========================================================================
-// º¯ÊýÃû³Æ£ºControlSpeed
-// ÊäÈë²ÎÊý£ºÎÞ
-// Êä³ö²ÎÊý£ºÎÞ
-// ÉÈ    Èë£ºÎÞ
-// ÉÈ    ³ö£ºÎÞ
-// º¯ÊýÃèÊö£ºBSPÓÃ»§ÃüÁî´¦Àí£¬´¦ÀíµÍÆµÈÎÎñ
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ£ï¿½ControlSpeed
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½    ï¿½ë£ºï¿½ï¿½
+// ï¿½ï¿½    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½BSPï¿½Ã»ï¿½ï¿½ï¿½ï¿½î´¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æµï¿½ï¿½ï¿½ï¿½
 // ========================================================================
 void ControlSpeed(void)
 {
     static uint8_t StopOrStop = 0;
-    
-    if(GetKeyEventStart())
+
+    if (GetKeyEventStart())
     {
-        if(StopOrStop == 1)
+        if (StopOrStop == 1)
         {
             StopOrStop = 2;
             LEDON_Control(LED_WORK);
-            StartStopControl(0,1);
+            StartStopControl(0, 1);
         }
-        else if(StopOrStop == 2)
+        else if (StopOrStop == 2)
         {
             StopOrStop = 1;
             LEDOFF_Control(LED_WORK);
-            StartStopControl(0,0);
+            StartStopControl(0, 0);
         }
     }
-    if(StopOrStop == 0)
+    if (StopOrStop == 0)
     {
         StopOrStop = 1;
         LEDOFF_Control(LED_WORK);
@@ -198,19 +198,20 @@ void ControlSpeed(void)
 }
 
 // ========================================================================
-// º¯ÊýÃû³Æ£ºdelay_decrement
-// ÊäÈë²ÎÊý£ºÎÞ
-// Êä³ö²ÎÊý£ºÎÞ
-// ÉÈ    Èë£ºÎÞ
-// ÉÈ    ³ö£ºÎÞ
-// º¯ÊýÃèÊö£ºÑÓÊ±¼ÆÊý
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ£ï¿½delay_decrement
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½    ï¿½ë£ºï¿½ï¿½
+// ï¿½ï¿½    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½
 // ========================================================================
-volatile static uint32_t delay;
+static volatile uint32_t delay;
 void delay_decrement(void);
 void delay_100us(uint32_t count);
 void delay_decrement(void)
 {
-    if(0U != delay) {
+    if (0U != delay)
+    {
         delay--;
     }
 }
@@ -218,209 +219,207 @@ void delay_100us(uint32_t count)
 {
     delay = count;
 
-    while(0U != delay) {
+    while (0U != delay)
+    {
     }
 }
 // ========================================================================
-// º¯ÊýÃû³Æ£ºSysTick_Handler
-// ÊäÈë²ÎÊý£ºÎÞ
-// Êä³ö²ÎÊý£ºÎÞ
-// ÉÈ    Èë£ºÎÞ
-// ÉÈ    ³ö£ºÎÞ
-// º¯ÊýÃèÊö£ºµÎ´ðÊ±ÖÓÖÐ¶Ï£¬´¦ÀíµÍÆµÈÎÎñ
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ£ï¿½SysTick_Handler
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½    ï¿½ë£ºï¿½ï¿½
+// ï¿½ï¿½    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î´ï¿½Ê±ï¿½ï¿½ï¿½Ð¶Ï£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æµï¿½ï¿½ï¿½ï¿½
 // ========================================================================
 void SysTick_Handler(void)
 {
-	static uint16_t freq_divde = 0;
-	
-	freq_divde++;
-	if ((freq_divde % 2) == 1)
-	{
-		MotorIsr_200us(0,&SystemInterfaceObj[0]);
-	}
-	
-    #ifdef PCBA_SPEED_DEMO
+    static uint16_t freq_divde = 0;
+
+    freq_divde++;
+    if ((freq_divde % 2) == 1)
+    {
+        MotorIsr_200us(0, &SystemInterfaceObj[0]);
+    }
+
+#ifdef PCBA_SPEED_DEMO
     ControlSpeed();
-    #endif
-    delay_decrement();	
+#endif
+    delay_decrement();
 }
 // ========================================================================
-// º¯ÊýÃû³Æ£ºDMA_Channel4_IRQHandler
-// ÊäÈë²ÎÊý£ºÎÞ
-// Êä³ö²ÎÊý£ºÎÞ
-// ÉÈ    Èë£ºÎÞ
-// ÉÈ    ³ö£ºÎÞ
-// º¯ÊýÃèÊö£ºDMAÖÐ¶Ïº¯Êý
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ£ï¿½DMA_Channel4_IRQHandler
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½    ï¿½ë£ºï¿½ï¿½
+// ï¿½ï¿½    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½DMAï¿½Ð¶Ïºï¿½ï¿½ï¿½
 // ========================================================================
 void DMA_Channel4_IRQHandler(void)
 {
-	if(SET == DMA_Interrupt_Status_Get(DMA, DMA_CH4_INT_TXC))
-	{
-			DMA_Interrupt_Status_Clear(DMA, DMA_CH4_INT_TXC);
-	}
-		memcpy(mRecvFrame.Buf,RxBuffer1,BUFFSIZE1);
-		for(uint8_t i=0;i<BUFFSIZE1;i++)
-		{
-			Uart_Isr(mRecvFrame.Buf[i]);
-		}
-    /*ÖØÐÂ·¢ÆðÒ»ÂÖÊý¾Ý´«Êä*/
+    if (SET == DMA_Interrupt_Status_Get(DMA, DMA_CH4_INT_TXC))
+    {
+        DMA_Interrupt_Status_Clear(DMA, DMA_CH4_INT_TXC);
+    }
+    memcpy(mRecvFrame.Buf, RxBuffer1, BUFFSIZE1);
+    for (uint8_t i = 0; i < BUFFSIZE1; i++)
+    {
+        Uart_Isr(mRecvFrame.Buf[i]);
+    }
+    /*ï¿½ï¿½ï¿½Â·ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½Ý´ï¿½ï¿½ï¿½*/
     DMA_Channel_Disable(DMA_CH4);
     DMA_Current_Data_Transfer_Number_Set(DMA_CH4, BUFFSIZE1);
-    DMA_Channel_Enable(DMA_CH4);	
+    DMA_Channel_Enable(DMA_CH4);
 }
 // ========================================================================
-// º¯ÊýÃû³Æ£ºDMA_Channel3_IRQHandler
-// ÊäÈë²ÎÊý£ºÎÞ
-// Êä³ö²ÎÊý£ºÎÞ
-// ÉÈ    Èë£ºÎÞ
-// ÉÈ    ³ö£ºÎÞ
-// º¯ÊýÃèÊö£ºDMAÖÐ¶Ïº¯Êý
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ£ï¿½DMA_Channel3_IRQHandler
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½    ï¿½ë£ºï¿½ï¿½
+// ï¿½ï¿½    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½DMAï¿½Ð¶Ïºï¿½ï¿½ï¿½
 // ========================================================================
 uint8_t DMA_FLAG_TRANS_FINISHED = 1;
 void DMA_Channel3_IRQHandler(void)
 {
-	if(SET == DMA_Interrupt_Status_Get(DMA, DMA_CH3_INT_TXC))
-	{
-		DMA_Interrupt_Status_Clear(DMA, DMA_CH3_INT_TXC);
-		DMA_FLAG_TRANS_FINISHED = 1;
-	}
+    if (SET == DMA_Interrupt_Status_Get(DMA, DMA_CH3_INT_TXC))
+    {
+        DMA_Interrupt_Status_Clear(DMA, DMA_CH3_INT_TXC);
+        DMA_FLAG_TRANS_FINISHED = 1;
+    }
 }
 // ========================================================================
-// º¯ÊýÃû³Æ£ºADC1_2_IRQHandler
-// ÊäÈë²ÎÊý£ºÎÞ
-// Êä³ö²ÎÊý£ºÎÞ
-// ÉÈ    Èë£ºÎÞ
-// ÉÈ    ³ö£ºÎÞ
-// º¯ÊýÃèÊö£ºADC1-2²É¼¯Êý¾ÝÍê³ÉÖÐ¶Ï
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ£ï¿½ADC1_2_IRQHandler
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½    ï¿½ë£ºï¿½ï¿½
+// ï¿½ï¿½    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ADC1-2ï¿½É¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½
 // ========================================================================
 void ADC_IRQHandler(void)
-{	
-  //delay_decrement();	
-  //TestGpioHigh();	
-	if(ADC_INTFlag_Status_Get(ADC_INT_FLAG_JENDC) == SET)
-	{
-		ADC_INTFlag_Status_Clear(ADC_INT_FLAG_JENDC);
+{
+    // delay_decrement();
+    // TestGpioHigh();
+    if (ADC_INTFlag_Status_Get(ADC_INT_FLAG_JENDC) == SET)
+    {
+        ADC_INTFlag_Status_Clear(ADC_INT_FLAG_JENDC);
 
-		ADC_ConvertedValue[0][0] = 0;
-		ADC_ConvertedValue[0][1] = ADC_Injected_Group_Conversion_Data_Get(ADC_INJECTED_DATA_REG_1);// v1
-		ADC_ConvertedValue[0][2] = ADC_Injected_Group_Conversion_Data_Get(ADC_INJECTED_DATA_REG_2);// w1
-		ADC_ConvertedValue[0][3] = 0x05a8;//ADC_RegularConvertedValueTab[1];// vbus
-		ADC_ConvertedValue[0][4] = 500;
+        ADC_ConvertedValue[0][0] = 0;
+        ADC_ConvertedValue[0][1] = ADC_Injected_Group_Conversion_Data_Get(ADC_INJECTED_DATA_REG_1); // v1
+        ADC_ConvertedValue[0][2] = ADC_Injected_Group_Conversion_Data_Get(ADC_INJECTED_DATA_REG_2); // w1
+        ADC_ConvertedValue[0][3] = 0x05a8;                                                          // ADC_RegularConvertedValueTab[1];// vbus
+        ADC_ConvertedValue[0][4] = 500;
         SystemObj[0].VoltageValue = ADC_RegularConvertedValueTab[1];
         SystemObj[0].SpeedValue = ADC_RegularConvertedValueTab[0];
-        
+
         ADC_InjectedConvertedValueTab[0] = ADC_ConvertedValue[0][1];
         ADC_InjectedConvertedValueTab[1] = ADC_ConvertedValue[0][2];
         ADC_InjectedConvertedValueTab[2] = ADC_Injected_Group_Conversion_Data_Get(ADC_INJECTED_DATA_REG_3);
-				
-        ADC_Regular_Channels_Software_Conversion_Operation(ADC_EXTRTRIG_SWSTRRCH_ENABLE);		
-		
-		#ifdef HALL_FOR_ANGLE_T			 //»ô¶ûFOC			
-		MotorPwm_Isr_I(0,&SystemInterfaceObj[0]);	
-		#endif  	
-	}
-	else 
-	{
-		if (ADC_INTFlag_Status_Get(ADC_INT_FLAG_AWDG) == SET)
+
+        ADC_Regular_Channels_Software_Conversion_Operation(ADC_EXTRTRIG_SWSTRRCH_ENABLE);
+
+#ifdef HALL_FOR_ANGLE_T // ï¿½ï¿½ï¿½ï¿½FOC
+        MotorPwm_Isr_I(0, &SystemInterfaceObj[0]);
+#endif
+    }
+    else
+    {
+        if (ADC_INTFlag_Status_Get(ADC_INT_FLAG_AWDG) == SET)
             ADC_INTFlag_Status_Clear(ADC_INT_FLAG_AWDG);
-	}
-	//TestGpioLow();
+    }
+    // TestGpioLow();
 }
 
 // ========================================================================
-// º¯ÊýÃû³Æ£ºTIM1_BRK_IRQHandler
-// ÊäÈë²ÎÊý£ºÎÞ
-// Êä³ö²ÎÊý£ºÎÞ
-// ÉÈ    Èë£ºÎÞ
-// ÉÈ    ³ö£ºÎÞ
-// º¯ÊýÃèÊö£º¹ýÁ÷É²³µÖÐ¶Ïº¯Êý
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ£ï¿½TIM1_BRK_IRQHandler
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½    ï¿½ë£ºï¿½ï¿½
+// ï¿½ï¿½    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É²ï¿½ï¿½ï¿½Ð¶Ïºï¿½ï¿½ï¿½
 // ========================================================================
 void TIM1_BRK_IRQHandler()
 {
-	if(TIM_Interrupt_Status_Get(TIM1, TIM_STS_BITF) != RESET)
-	{	 
-		TIM_Interrupt_Status_Clear(TIM1, TIM_STS_BITF );
-		BrakeErrIsr_I(0);
-	} 
-	
+    if (TIM_Interrupt_Status_Get(TIM1, TIM_STS_BITF) != RESET)
+    {
+        TIM_Interrupt_Status_Clear(TIM1, TIM_STS_BITF);
+        BrakeErrIsr_I(0);
+    }
 }
 // ========================================================================
-// º¯ÊýÃû³Æ£ºCOMP1_2_3_IRQHandler
-// ÊäÈë²ÎÊý£ºÎÞ
-// Êä³ö²ÎÊý£ºÎÞ
-// ÉÈ    Èë£ºÎÞ
-// ÉÈ    ³ö£ºÎÞ
-// º¯ÊýÃèÊö£º±È½ÏÆ÷ÖÐ¶Ïº¯Êý
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ£ï¿½COMP1_2_3_IRQHandler
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½    ï¿½ë£ºï¿½ï¿½
+// ï¿½ï¿½    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È½ï¿½ï¿½ï¿½ï¿½Ð¶Ïºï¿½ï¿½ï¿½
 // ========================================================================
 void COMP_1_2_3_IRQHandler()
 {
-    if(EXTI_Interrupt_Status_Get(EXTI_LINE18))
+    if (EXTI_Interrupt_Status_Get(EXTI_LINE18))
     {
         EXTI_Interrupt_Status_Clear(EXTI_LINE18);
     }
-    if(COMP_Interrupt_Status_Get())
+    if (COMP_Interrupt_Status_Get())
     {
         COMP_Interrupt_Status_OneComp_Clear(COMP1);
-		BrakeErrIsr_I(0);
+        BrakeErrIsr_I(0);
     }
 }
 // ========================================================================
-// º¯ÊýÃû³Æ£ºVar_Init
-// ÊäÈë²ÎÊý£ºÎÞ
-// Êä³ö²ÎÊý£ºÎÞ
-// ÉÈ    Èë£ºÎÞ
-// ÉÈ    ³ö£ºÎÞ
-// º¯ÊýÃèÊö£º²ÎÊý³õÊ¼»¯
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ£ï¿½Var_Init
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½    ï¿½ë£ºï¿½ï¿½
+// ï¿½ï¿½    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½
 // ========================================================================
 void Var_Init()
 {
-	address_adc_value[0] = ADC_ConvertedValue[0];
-	address_adc_value[1] = ADC_ConvertedValue[1];
-	/******************** motor1´«µÝ²ÎÊý³õÊ¼»¯***********************/
-    // µçÁ÷
-	SystemInterfaceObj[0].IaSample_I = address_adc_value[0];
-	SystemInterfaceObj[0].IbSample_I = (address_adc_value[0] + 1);
-	SystemInterfaceObj[0].IcSample_I = (address_adc_value[0] + 2);
-	// µçÑ¹
-	SystemInterfaceObj[0].UdcSample_I = (address_adc_value[0] + 3);
-	// °ëÖØÔØÖµ
-	SystemInterfaceObj[0].Half_duty_I = &SystemObj[0].Half_duty;
+    address_adc_value[0] = ADC_ConvertedValue[0];
+    address_adc_value[1] = ADC_ConvertedValue[1];
+    /******************** motor1ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½***********************/
+    // ï¿½ï¿½ï¿½ï¿½
+    SystemInterfaceObj[0].IaSample_I = address_adc_value[0];
+    SystemInterfaceObj[0].IbSample_I = (address_adc_value[0] + 1);
+    SystemInterfaceObj[0].IcSample_I = (address_adc_value[0] + 2);
+    // ï¿½ï¿½Ñ¹
+    SystemInterfaceObj[0].UdcSample_I = (address_adc_value[0] + 3);
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
+    SystemInterfaceObj[0].Half_duty_I = &SystemObj[0].Half_duty;
 
-	SystemObj[0].IaSample = 0;
-	SystemObj[0].IbSample = 0;
-	SystemObj[0].IcSample = 0;
-	SystemObj[0].UdcSample = 0;
-	SystemObj[0].Half_duty = HALFDUTY_1;
-	
-	/********************* motor2´«µÝ²ÎÊý³õÊ¼»¯**********************/
-	// µçÁ÷
-	SystemInterfaceObj[1].IaSample_I = address_adc_value[1];
-	SystemInterfaceObj[1].IbSample_I = (address_adc_value[1] + 1);
-	SystemInterfaceObj[1].IcSample_I = (address_adc_value[1] + 2);
-	// µçÑ¹
-	SystemInterfaceObj[1].UdcSample_I = (address_adc_value[1] + 3);
-	// °ëÖØÔØÖµ
-	SystemInterfaceObj[1].Half_duty_I = &SystemObj[1].Half_duty;
-	
-	SystemObj[1].IaSample = 0;
-	SystemObj[1].IbSample = 0;
-	SystemObj[1].IcSample = 0;
-	SystemObj[1].UdcSample = 0;
-	SystemObj[1].Half_duty = HALFDUTY_8;
-	
-	MotorDrive_Init(&SystemInterfaceObj[0],&SystemInterfaceObj[1]);
+    SystemObj[0].IaSample = 0;
+    SystemObj[0].IbSample = 0;
+    SystemObj[0].IcSample = 0;
+    SystemObj[0].UdcSample = 0;
+    SystemObj[0].Half_duty = HALFDUTY_1;
+
+    /********************* motor2ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½**********************/
+    // ï¿½ï¿½ï¿½ï¿½
+    SystemInterfaceObj[1].IaSample_I = address_adc_value[1];
+    SystemInterfaceObj[1].IbSample_I = (address_adc_value[1] + 1);
+    SystemInterfaceObj[1].IcSample_I = (address_adc_value[1] + 2);
+    // ï¿½ï¿½Ñ¹
+    SystemInterfaceObj[1].UdcSample_I = (address_adc_value[1] + 3);
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
+    SystemInterfaceObj[1].Half_duty_I = &SystemObj[1].Half_duty;
+
+    SystemObj[1].IaSample = 0;
+    SystemObj[1].IbSample = 0;
+    SystemObj[1].IcSample = 0;
+    SystemObj[1].UdcSample = 0;
+    SystemObj[1].Half_duty = HALFDUTY_8;
+
+    MotorDrive_Init(&SystemInterfaceObj[0], &SystemInterfaceObj[1]);
 }
 // ========================================================================
-// º¯ÊýÃû³Æ£ºMotorMain_Circle
-// ÊäÈë²ÎÊý£ºÎÞ
-// Êä³ö²ÎÊý£ºÎÞ
-// ÉÈ    Èë£ºÎÞ
-// ÉÈ    ³ö£ºÎÞ
-// º¯ÊýÃèÊö£ºÖ÷Ñ­»·´¦ÀíÈÎÎñ
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ£ï¿½MotorMain_Circle
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½    ï¿½ë£ºï¿½ï¿½
+// ï¿½ï¿½    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 // ========================================================================
 void MotorMain_Circle()
 {
-	ForMotorMain(&SystemInterfaceObj[0],&SystemInterfaceObj[1]);
+    ForMotorMain(&SystemInterfaceObj[0], &SystemInterfaceObj[1]);
 }
-
-

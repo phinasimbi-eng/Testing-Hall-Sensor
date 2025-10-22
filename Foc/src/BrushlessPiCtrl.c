@@ -38,12 +38,12 @@
 void CurLoop_Isr(Motor_Obj *Obj);
 void CurLoop_Isr_c(Motor_Obj *Obj);
 // ========================================================================
-// 函数名称：BrushlessInit_I
-// 输入参数：无
-// 输出参数：无
-// 扇    入：无
-// 扇    出：无
-// 函数描述：BrushlessInit_I初始化
+// Function Name: BrushlessInit_I
+// Description: Initialize brushless motor controller
+// Input Parameters: Motor object pointer
+// Output Parameters: None
+// Return Value: None
+// Purpose: Initialize BrushlessInit_I parameters
 // ========================================================================
 void BrushlessInit(Motor_Obj *Obj)
 {
@@ -53,21 +53,21 @@ void BrushlessInit(Motor_Obj *Obj)
     Obj->BrushlessObj.I_Beta = 0;
     Obj->BrushlessObj.IqUpCnt = 0;
     Obj->BrushlessObj.IqTarget = 0;
-    
-    Obj->BrushlessObj.Open_Angle = 0; 
+
+    Obj->BrushlessObj.Open_Angle = 0;
     Obj->BrushlessObj.Open_DelTHeta = 0;
     Obj->BrushlessObj.StartupRamp = 0;
-    Obj->BrushlessObj.Final_Position = 20*65536/Obj->Plate.Pwm_freq*256*256;	//858880
+    Obj->BrushlessObj.Final_Position = 20 * 65536 / Obj->Plate.Pwm_freq * 256 * 256; // 858880
 }
 // ========================================================================
-// 函数名称：BrushlessPiCtrl
-// 输入参数：无
-// 输出参数：无
-// 扇    入：无
-// 扇    出：无
-// 函数描述：电流环
+// Function Name: BrushlessPiCtrl
+// Description: Brushless motor PI control algorithm
+// Input Parameters: Motor number and motor object pointer
+// Output Parameters: None
+// Return Value: None
+// Purpose: Execute brushless motor PI control loop
 // ========================================================================
-void BrushlessPiCtrl(uint8_t num,Motor_Obj *Obj)
+void BrushlessPiCtrl(uint8_t num, Motor_Obj *Obj)
 {
-	CurLoop_Isr_c(Obj);		
+    CurLoop_Isr_c(Obj);
 }

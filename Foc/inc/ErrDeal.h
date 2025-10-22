@@ -37,40 +37,38 @@
 #define _ERRDEAL_H_
 
 #include "stdint.h"
-// 电机故障定义---------------------------------------------------------------
+// Motor error flag definitions ---------------------------------------------------------------
 typedef union _MOTOR_FLAG_ALL_
 {
-    uint16_t Arr[2];
-    struct
-    {
-			uint16_t SwOverCurrent :1;                // 软件过流
-			uint16_t HwTotalErr    :1;                // 硬件故障
-			uint16_t HwOverCurrent :1;                // 硬件过流
-			uint16_t LowTempFlag	 :1;             		// 低温保护标志
-			uint16_t HighTempFlag  :1;								// 高温保护标志
-			uint16_t LackVolatage  :1;                // 欠压故障
-			uint16_t OverVolatage  :1;                // 过压故障
-			uint16_t IZeroFlag     :1;                // 零漂故障
-			uint16_t Strcv0	    	 :8;
-			
-			uint16_t MotorStarted  :1;                // 电机运行
-			uint16_t ShortPhase    :1;                // 三相短路标志
-			uint16_t AllowStart    :1;                // 允许启动
-			uint16_t MotorStartReq :1;                // 开机请求
-			uint16_t ElectUpFlag   :1;                // 上电缓冲电压标志
-			uint16_t DutyErr		   :1;                // 占空比计算错误
-			uint16_t SystemReady   :1;                // 系统稳定标志
-			uint16_t SlidingFlag   :1;                // 滑行检测标志
-			uint16_t OverModulateFlag :1;             // 过调
-			uint16_t ForceStartFlag  :1;							// 强制启动标志
-			
-			uint16_t BrakeFlag  :1;							// 强制启动标志
-			uint16_t UpperControl  :1;							// 上位机启停控制
-			uint16_t FOCControl  :1;							// 压缩机启停控制
-			uint16_t Strcv    			: 3;
-    } Bits;
+	uint16_t Arr[2];
+	struct
+	{
+		uint16_t SwOverCurrent : 1; // Software over-current protection
+		uint16_t HwTotalErr : 1;	// Hardware general error
+		uint16_t HwOverCurrent : 1; // Hardware over-current protection
+		uint16_t LowTempFlag : 1;	// Low temperature protection flag
+		uint16_t HighTempFlag : 1;	// High temperature protection flag
+		uint16_t LackVolatage : 1;	// Under-voltage protection
+		uint16_t OverVolatage : 1;	// Over-voltage protection
+		uint16_t IZeroFlag : 1;		// Current zero drift flag
+		uint16_t Strcv0 : 8;
+
+		uint16_t MotorStarted : 1;	   // Motor running status
+		uint16_t ShortPhase : 1;	   // Phase short circuit flag
+		uint16_t AllowStart : 1;	   // Allow start flag
+		uint16_t MotorStartReq : 1;	   // Motor start request
+		uint16_t ElectUpFlag : 1;	   // Power supply detection voltage flag
+		uint16_t DutyErr : 1;		   // Duty cycle error detection
+		uint16_t SystemReady : 1;	   // System ready flag
+		uint16_t SlidingFlag : 1;	   // Sliding mode flag
+		uint16_t OverModulateFlag : 1; // Over-modulation flag
+		uint16_t ForceStartFlag : 1;   // Force start flag
+
+		uint16_t BrakeFlag : 1;	   // Force brake flag
+		uint16_t UpperControl : 1; // Upper level control stop flag
+		uint16_t FOCControl : 1;   // Voltage control stop flag
+		uint16_t Strcv : 3;
+	} Bits;
 } MotorFlag_Obj;
 
-
-
-#endif 
+#endif

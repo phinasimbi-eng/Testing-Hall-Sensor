@@ -32,177 +32,176 @@
  *
  * @copyright Copyright (c) 2019, Nations Technologies Inc. All rights reserved.
  */
- 
+
 #include "MotorDrive.h"
 
 extern Motor_Obj motor_I[2];
 extern System_Obj SystemObj[2];
 extern __IO uint16_t ADC_InjectedConvertedValueTab[4];
 extern __IO uint16_t ADC_RegularConvertedValueTab[8];
-extern int32_t  IQsat( int32_t Uint,int32_t  U_max, int32_t U_min);
-extern uint16_t* address_adc_value[2];
-extern void ErrDeal_Isr(Motor_Obj *Obj);       // 故障处理函数
+extern int32_t IQsat(int32_t Uint, int32_t U_max, int32_t U_min);
+extern uint16_t *address_adc_value[2];
+extern void ErrDeal_Isr(Motor_Obj *Obj); // Error handling interrupt
 // ========================================================================
-// 函数名称：DataDealInit_c
-// 输入参数：无
-// 输出参数：无
-// 扇    入：无
-// 扇    出：无
-// 函数描述：参数初始化函数
+// Function Name: DataDealInit_c
+// Description: Data processing initialization
+// Input Parameters: Motor object pointer
+// Output Parameters: None
+// Return Value: None
+// Purpose: Data processing initialization function
 // ========================================================================
 void DataDealInit_c(Motor_Obj *Obj)
 {
-		Obj->DataObj.ZeroCal_ASum = 0;      // A相零漂均值累积
-		Obj->DataObj.ZeroCal_BSum = 0;      // B相零漂均值累积
-		Obj->DataObj.ZeroCal_CSum = 0;      // C相零漂均值累积
+	Obj->DataObj.ZeroCal_ASum = 0; // Phase A current offset accumulation
+	Obj->DataObj.ZeroCal_BSum = 0; // Phase B current offset accumulation
+	Obj->DataObj.ZeroCal_CSum = 0; // Phase C current offset accumulation
 
-		Obj->DataObj.ZeroCal_ArrASum = 0;   // 滑窗滤波数组和
-		Obj->DataObj.ZeroCal_ArrBSum = 0;   // 滑窗滤波数组和
-		Obj->DataObj.ZeroCal_ArrCSum = 0;   // 滑窗滤波数组和
+	Obj->DataObj.ZeroCal_ArrASum = 0; // Array A filtering accumulation
+	Obj->DataObj.ZeroCal_ArrBSum = 0; // Array B filtering accumulation
+	Obj->DataObj.ZeroCal_ArrCSum = 0; // Array C filtering accumulation
 
-		Obj->DataObj.Ia_MaxBuff = 0;        // A相最大值暂存器
-		Obj->DataObj.Ib_MaxBuff = 0;        // B相最大值暂存器
-		Obj->DataObj.Ic_MaxBuff = 0;        // C相最大值暂存器
-		
-		Obj->DataObj.Ia_Q15 = 0;            // A相电流Q15
-		Obj->DataObj.Ib_Q15 = 0;            // B相电流Q15
-		Obj->DataObj.Ic_Q15 = 0;            // C相电流Q15
-		Obj->DataObj.Ia_Phy = 0;            // A相电流物理值
-		Obj->DataObj.Ib_Phy = 0;            // B相电流物理值
-		Obj->DataObj.Ic_Phy = 0;            // C相电流物理值
+	Obj->DataObj.Ia_MaxBuff = 0; // Phase A current maximum buffer
+	Obj->DataObj.Ib_MaxBuff = 0; // Phase B current maximum buffer
+	Obj->DataObj.Ic_MaxBuff = 0; // Phase C current maximum buffer
 
-		Obj->DataObj.Ia_PhyMax = 0;         // A相电流最大值
-		Obj->DataObj.Ib_PhyMax = 0;         // B相电流最大值
-		Obj->DataObj.Ic_PhyMax = 0;         // C相电流最大值
+	Obj->DataObj.Ia_Q15 = 0; // Phase A current Q15 format
+	Obj->DataObj.Ib_Q15 = 0; // Phase B current Q15 format
+	Obj->DataObj.Ic_Q15 = 0; // Phase C current Q15 format
+	Obj->DataObj.Ia_Phy = 0; // Phase A current physical value
+	Obj->DataObj.Ib_Phy = 0; // Phase B current physical value
+	Obj->DataObj.Ic_Phy = 0; // Phase C current physical value
 
-		Obj->DataObj.MotorSpeed = 0;        // 电机转速
-				
-		Obj->DataObj.PhaseAVolZeroRef = 0; // A相电压Q12
-		Obj->DataObj.PhaseBVolZeroRef = 0; // B相电压Q12
-		Obj->DataObj.PhaseCVolZeroRef = 0; // C相电压Q12		
+	Obj->DataObj.Ia_PhyMax = 0; // Phase A current maximum value
+	Obj->DataObj.Ib_PhyMax = 0; // Phase B current maximum value
+	Obj->DataObj.Ic_PhyMax = 0; // Phase C current maximum value
+
+	Obj->DataObj.MotorSpeed = 0; // Motor speed
+
+	Obj->DataObj.PhaseAVolZeroRef = 0; // Phase A voltage Q12 reference
+	Obj->DataObj.PhaseBVolZeroRef = 0; // Phase B voltage Q12 reference
+	Obj->DataObj.PhaseCVolZeroRef = 0; // Phase C voltage Q12 reference
 }
 // ========================================================================
-// 函数名称：IzeroReCalc_c
-// 输入参数：无
-// 输出参数：无
-// 扇    入：无
-// 扇    出：无
-// 函数描述：零电流参考值计算
+// Function Name: IzeroReCalc_c
+// Description: Current zero reference recalculation
+// Input Parameters: Motor object pointer, System interface object pointer
+// Output Parameters: None
+// Return Value: None
+// Purpose: Current zero reference value calculation function
 // ========================================================================
-void IzeroReCalc_c(Motor_Obj *Obj,SystemInterface_Obj *InfObj)
+void IzeroReCalc_c(Motor_Obj *Obj, SystemInterface_Obj *InfObj)
 {
 	static uint16_t ADC_PhaseA_Curr[FilterNum];
 	static uint16_t ADC_PhaseB_Curr[FilterNum];
 	static uint16_t ADC_PhaseC_Curr[FilterNum];
-	static uint8_t i = 0;	
-	static uint8_t j = 0;	
-	static uint8_t flag = 0;	
-	
+	static uint8_t i = 0;
+	static uint8_t j = 0;
+	static uint8_t flag = 0;
+
 	ADC_PhaseA_Curr[i] = ADC_InjectedConvertedValueTab[0];
 	ADC_PhaseB_Curr[i] = ADC_InjectedConvertedValueTab[1];
 	ADC_PhaseC_Curr[i] = ADC_InjectedConvertedValueTab[2];
 
 	i++;
-	if(i>=FilterNum)
-	i=0;
+	if (i >= FilterNum)
+		i = 0;
 
-	if(j<=CalcuNum)
+	if (j <= CalcuNum)
 	{
 		j++;
-		flag=1;
+		flag = 1;
 	}
 	else
-		flag=0;
-	
-	if(Obj->Flag.Bits.MotorStarted == 0 && flag == 1)
+		flag = 0;
+
+	if (Obj->Flag.Bits.MotorStarted == 0 && flag == 1)
 	{
 		uint32_t sum_U = 0;
-		uint32_t sum_V = 0;	
-		uint32_t sum_W = 0;		
+		uint32_t sum_V = 0;
+		uint32_t sum_W = 0;
 		uint8_t i;
-		for(i=0; i < FilterNum; i++)
+		for (i = 0; i < FilterNum; i++)
 		{
 			sum_U += ADC_PhaseA_Curr[i];
 			sum_V += ADC_PhaseB_Curr[i];
 			sum_W += ADC_PhaseC_Curr[i];
 		}
-		Obj->DataObj.Ia_ZeroRef = _IQ12toIQ(sum_U /FilterNum);
-		Obj->DataObj.Ib_ZeroRef = _IQ12toIQ(sum_V /FilterNum);
-		Obj->DataObj.Ic_ZeroRef = _IQ12toIQ(sum_W /FilterNum);		
+		Obj->DataObj.Ia_ZeroRef = _IQ12toIQ(sum_U / FilterNum);
+		Obj->DataObj.Ib_ZeroRef = _IQ12toIQ(sum_V / FilterNum);
+		Obj->DataObj.Ic_ZeroRef = _IQ12toIQ(sum_W / FilterNum);
 	}
-	
 }
 // ========================================================================
-// 函数名称：CurrentQ15Calcu_c
-// 输入参数：无                                                                                                            
-// 输出参数：无
-// 扇    入：无
-// 扇    出：无
-// 函数描述：采集的相电流处理
+// Function Name: CurrentQ15Calcu_c
+// Description: Current Q15 format calculation
+// Input Parameters: Motor object pointer, System interface object pointer
+// Output Parameters: None
+// Return Value: None
+// Purpose: Current sampling and calculation function
 // ========================================================================
-void CurrentQ15Calcu_c(Motor_Obj *Obj,SystemInterface_Obj *InfObj)
-{	
+void CurrentQ15Calcu_c(Motor_Obj *Obj, SystemInterface_Obj *InfObj)
+{
 	Obj->DataObj.Ia_Q15 = ((_IQ12toIQ(ADC_InjectedConvertedValueTab[0]) - Obj->DataObj.Ia_ZeroRef));
 	Obj->DataObj.Ib_Q15 = ((_IQ12toIQ(ADC_InjectedConvertedValueTab[1]) - Obj->DataObj.Ib_ZeroRef));
 	Obj->DataObj.Ic_Q15 = ((_IQ12toIQ(ADC_InjectedConvertedValueTab[2]) - Obj->DataObj.Ic_ZeroRef));
-	
-	Obj->DataObj.Ia_PhyMax = _IQabs(Obj->DataObj.Ia_Q15);	//限流保护
+
+	Obj->DataObj.Ia_PhyMax = _IQabs(Obj->DataObj.Ia_Q15); // Absolute current
 	Obj->DataObj.Ib_PhyMax = _IQabs(Obj->DataObj.Ib_Q15);
-	
+
 	ErrDeal_Isr(&motor_I[0]);
 }
 // ========================================================================
-// 函数名称：ElectUpDected_c
-// 输入参数：无
-// 输出参数：无
-// 扇    入：无
-// 扇    出：无
-// 函数描述：上电缓冲检测函数
+// Function Name: ElectUpDected_c
+// Description: Electrical supply voltage detection
+// Input Parameters: Motor object pointer
+// Output Parameters: None
+// Return Value: None
+// Purpose: Electrical supply voltage detection function
 // ========================================================================
 void ElectUpDected_c(Motor_Obj *Obj)
-{	
+{
 	Obj->DataObj.Udc_Q15 = (ADC_RegularConvertedValueTab[1] << 3);
-	Obj->DataObj.Udc_Real = ((uint32_t)Obj->DataObj.Udc_Q15 * Obj->MotorBaseObj.VolatageBase) >> 15;	
-	if(Obj->DataObj.Udc_Q15 > 0)
+	Obj->DataObj.Udc_Real = ((uint32_t)Obj->DataObj.Udc_Q15 * Obj->MotorBaseObj.VolatageBase) >> 15;
+	if (Obj->DataObj.Udc_Q15 > 0)
 	{
-		Obj->Flag.Bits.SystemReady = 1;		
+		Obj->Flag.Bits.SystemReady = 1;
 	}
 	else
 	{
-		Obj->Flag.Bits.SystemReady = 0;		
+		Obj->Flag.Bits.SystemReady = 0;
 	}
-	if(Obj->DataObj.Udc_Real < Obj->MotorBaseObj.OverVoltage &&
-		 Obj->DataObj.Udc_Real > Obj->MotorBaseObj.LackVoltage)
+	if (Obj->DataObj.Udc_Real < Obj->MotorBaseObj.OverVoltage &&
+		Obj->DataObj.Udc_Real > Obj->MotorBaseObj.LackVoltage)
 	{
-		Obj->Flag.Bits.ElectUpFlag = 1;		
-	}	
+		Obj->Flag.Bits.ElectUpFlag = 1;
+	}
 }
 // ========================================================================
-// 函数名称：GetHallLine_c
-// 输入参数：无
-// 输出参数：无
-// 扇    入：无
-// 扇    出：无
-// 函数描述：霍尔相序检测函数
+// Function Name: GetHallLine_c
+// Description: Hall sensor line detection
+// Input Parameters: Hall calculation structure pointer, Hall IO value
+// Output Parameters: None
+// Return Value: Detection result (0: valid, 1: invalid)
+// Purpose: Hall sensor line sequence detection function
 // ========================================================================
-int8_t GetHallLine_c(HallCalc_t * pHallCalc,int8_t HallIo)
+int8_t GetHallLine_c(HallCalc_t *pHallCalc, int8_t HallIo)
 {
-    uint8_t i = 0;
-    pHallCalc->HallIo = HallIo;
+	uint8_t i = 0;
+	pHallCalc->HallIo = HallIo;
 
-    for(;i<6;i++)
-    {
-				if(pHallCalc->HallIo == 0)
-				{
-						break;
-				}
-        if(pHallCalc->HallIo == pHallCalc->HallFixLineSeq[i])
-        {
-            break;
-        }
-    }
-		if(i >= 6) 
-			return 1;
-		else 
-			return 0;
+	for (; i < 6; i++)
+	{
+		if (pHallCalc->HallIo == 0)
+		{
+			break;
+		}
+		if (pHallCalc->HallIo == pHallCalc->HallFixLineSeq[i])
+		{
+			break;
+		}
+	}
+	if (i >= 6)
+		return 1;
+	else
+		return 0;
 }

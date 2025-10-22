@@ -40,138 +40,135 @@
 
 extern RecvFrame mRecvFrame;
 void Uart_init(void);
-void Send_Value_Uart(uint8_t * pChar,int32_t len);
-uint8_t SxBuffer1[BUFFSIZE],RxBuffer1[BUFFSIZE1];
+void Send_Value_Uart(uint8_t *pChar, int32_t len);
+uint8_t SxBuffer1[BUFFSIZE], RxBuffer1[BUFFSIZE1];
 
 // ========================================================================
-// 函数名称：Uart_init
-// 输入参数：无
-// 输出参数：无
-// 扇    入：无
-// 扇    出：无
-// 函数描述：调试串口初始化
+// Function Name: Uart_DMA_config
+// Description: Configure UART DMA settings for data transfer
+// Input: None
+// Output: None
+// Function: Initialize UART DMA channels for transmit and receive operations
 // ========================================================================
 void Uart_DMA_config(void)
 {
 
-    DMA_InitType DMA_InitStructure;
+  DMA_InitType DMA_InitStructure;
 
-    /* 使用DMA接收数据配置 */
-    DMA_Reset(DMA_CH4);
-    DMA_InitStructure.PeriphAddr     = (uint32_t)&(UART3->DAT);				//串口数据寄存器
-    DMA_InitStructure.MemAddr        = (uint32_t)RxBuffer1;						//接收数据缓冲区
-    DMA_InitStructure.Direction      = DMA_DIR_PERIPH_SRC;						//数据传输方向
-    DMA_InitStructure.BufSize        = BUFFSIZE1;											//缓冲区大小
-    DMA_InitStructure.PeriphInc      = DMA_PERIPH_INC_MODE_DISABLE;		//外设地址不增加
-    DMA_InitStructure.MemoryInc      = DMA_MEM_INC_MODE_ENABLE;				//内存地址自动增加
-    DMA_InitStructure.PeriphDataSize = DMA_PERIPH_DATA_WIDTH_BYTE;		//外设数据宽度
-    DMA_InitStructure.MemDataSize    = DMA_MEM_DATA_WIDTH_BYTE;				//内存数据宽度
-    DMA_InitStructure.CircularMode   = DMA_CIRCULAR_MODE_DISABLE;			//循环传输失能
-    DMA_InitStructure.Priority       = DMA_CH_PRIORITY_HIGH;					//dma优先级
-    DMA_InitStructure.Mem2Mem        = DMA_MEM2MEM_DISABLE;						//不是内存到内存的传输方式
-    DMA_Initializes(DMA_CH4, &DMA_InitStructure);											//初始化DMA
-	
-    DMA_Channel_Request_Remap(DMA_CH4, DMA_REMAP_UART3_RX);						//DMA 通道映射
-		DMA_Interrupts_Enable(DMA_CH4, DMA_INT_TXC);											//DMA 传输完成中断使能
-    USART_DMA_Transfer_Enable(UART3, USART_DMAREQ_RX );								//串口DMA 接收使能
-    DMA_Channel_Enable(DMA_CH4);																			//DMA使能
-		
-		/* 使用DMA发送数据配置 */
-		DMA_Reset(DMA_CH3);
-    DMA_InitStructure.PeriphAddr     = (uint32_t)&(UART3->DAT);				//串口数据寄存器
-    DMA_InitStructure.MemAddr        = (uint32_t)SxBuffer1;						//发送数据缓冲区
-    DMA_InitStructure.Direction      = DMA_DIR_PERIPH_DST;						//数据传输方向
-    DMA_InitStructure.BufSize        = BUFFSIZE;											//缓冲区大小
-    DMA_InitStructure.PeriphInc      = DMA_PERIPH_INC_MODE_DISABLE;		//外设地址不增加
-    DMA_InitStructure.MemoryInc      = DMA_MEM_INC_MODE_ENABLE;				//内存地址自动增加
-    DMA_InitStructure.PeriphDataSize = DMA_PERIPH_DATA_WIDTH_BYTE;		//外设数据宽度
-    DMA_InitStructure.MemDataSize    = DMA_MEM_DATA_WIDTH_BYTE;				//内存数据宽度
-    DMA_InitStructure.CircularMode   = DMA_CIRCULAR_MODE_DISABLE;			//循环传输失能
-    DMA_InitStructure.Priority       = DMA_CH_PRIORITY_HIGHEST;				//dma优先级
-    DMA_InitStructure.Mem2Mem        = DMA_MEM2MEM_DISABLE;						//不是内存到内存的传输方式
-    DMA_Initializes(DMA_CH3, &DMA_InitStructure);											//初始化DMA
-	
-    DMA_Channel_Request_Remap(DMA_CH3, DMA_REMAP_UART3_TX);						//DMA 通道映射
-		DMA_Interrupts_Enable(DMA_CH3, DMA_INT_TXC);											//DMA 传输完成中断使能
-    USART_DMA_Transfer_Enable(UART3, USART_DMAREQ_TX );								//串口DMA发送使能
-    //DMA_Channel_Enable(DMA_CH3);																			//DMA使能		
+  /* Configure DMA receive channel */
+  DMA_Reset(DMA_CH4);
+  DMA_InitStructure.PeriphAddr = (uint32_t)&(UART3->DAT);        // Peripheral data register
+  DMA_InitStructure.MemAddr = (uint32_t)RxBuffer1;               // Receive data buffer
+  DMA_InitStructure.Direction = DMA_DIR_PERIPH_SRC;              // Data transfer direction
+  DMA_InitStructure.BufSize = BUFFSIZE1;                         // Buffer size
+  DMA_InitStructure.PeriphInc = DMA_PERIPH_INC_MODE_DISABLE;     // Peripheral address increment
+  DMA_InitStructure.MemoryInc = DMA_MEM_INC_MODE_ENABLE;         // Memory address auto-increment
+  DMA_InitStructure.PeriphDataSize = DMA_PERIPH_DATA_WIDTH_BYTE; // Peripheral data width
+  DMA_InitStructure.MemDataSize = DMA_MEM_DATA_WIDTH_BYTE;       // Memory data width
+  DMA_InitStructure.CircularMode = DMA_CIRCULAR_MODE_DISABLE;    // Circular mode disabled
+  DMA_InitStructure.Priority = DMA_CH_PRIORITY_HIGH;             // DMA priority level
+  DMA_InitStructure.Mem2Mem = DMA_MEM2MEM_DISABLE;               // Memory to memory transfer mode disabled
+  DMA_Initializes(DMA_CH4, &DMA_InitStructure);                  // Initialize DMA
+
+  DMA_Channel_Request_Remap(DMA_CH4, DMA_REMAP_UART3_RX); // DMA channel mapping
+  DMA_Interrupts_Enable(DMA_CH4, DMA_INT_TXC);            // DMA transfer complete interrupt enable
+  USART_DMA_Transfer_Enable(UART3, USART_DMAREQ_RX);      // Enable UART DMA receive
+  DMA_Channel_Enable(DMA_CH4);                            // Enable DMA
+
+  /* Configure DMA transmit channel */
+  DMA_Reset(DMA_CH3);
+  DMA_InitStructure.PeriphAddr = (uint32_t)&(UART3->DAT);        // Peripheral data register
+  DMA_InitStructure.MemAddr = (uint32_t)SxBuffer1;               // Transmit data buffer
+  DMA_InitStructure.Direction = DMA_DIR_PERIPH_DST;              // Data transfer direction
+  DMA_InitStructure.BufSize = BUFFSIZE;                          // Buffer size
+  DMA_InitStructure.PeriphInc = DMA_PERIPH_INC_MODE_DISABLE;     // Peripheral address increment
+  DMA_InitStructure.MemoryInc = DMA_MEM_INC_MODE_ENABLE;         // Memory address auto-increment
+  DMA_InitStructure.PeriphDataSize = DMA_PERIPH_DATA_WIDTH_BYTE; // Peripheral data width
+  DMA_InitStructure.MemDataSize = DMA_MEM_DATA_WIDTH_BYTE;       // Memory data width
+  DMA_InitStructure.CircularMode = DMA_CIRCULAR_MODE_DISABLE;    // Circular mode disabled
+  DMA_InitStructure.Priority = DMA_CH_PRIORITY_HIGHEST;          // DMA priority level
+  DMA_InitStructure.Mem2Mem = DMA_MEM2MEM_DISABLE;               // Memory to memory transfer mode disabled
+  DMA_Initializes(DMA_CH3, &DMA_InitStructure);                  // Initialize DMA
+
+  DMA_Channel_Request_Remap(DMA_CH3, DMA_REMAP_UART3_TX); // DMA channel mapping
+  DMA_Interrupts_Enable(DMA_CH3, DMA_INT_TXC);            // DMA transfer complete interrupt enable
+  USART_DMA_Transfer_Enable(UART3, USART_DMAREQ_TX);      // Enable UART DMA transmit
+  // DMA_Channel_Enable(DMA_CH3);                             // Enable DMA
 }
 // ========================================================================
-// 函数名称：Uart_init
-// 输入参数：无
-// 输出参数：无
-// 扇    入：无
-// 扇    出：无
-// 函数描述：调试串口初始化
+// Function Name: Uart_init
+// Description: Initialize UART peripheral and DMA configuration
+// Input: None
+// Output: None
+// Function: Configure UART3 with 4Mbps baud rate and setup DMA interrupts
 // ========================================================================
 void Uart_init(void)
 {
-    USART_InitType USART_InitStructure;
-    NVIC_InitType NVIC_InitStructure;
-    
-    USART_InitStructure.BaudRate = 4000000l;
-    USART_InitStructure.WordLength = USART_WL_8B;
-    USART_InitStructure.StopBits = USART_STPB_1;
-    USART_InitStructure.Parity = USART_PE_NO;
-    USART_InitStructure.HardwareFlowControl = USART_HFCTRL_NONE;
-    USART_InitStructure.Mode = USART_MODE_RX | USART_MODE_TX;
-    USART_Initializes(UART3,&USART_InitStructure);
+  USART_InitType USART_InitStructure;
+  NVIC_InitType NVIC_InitStructure;
 
-//    NVIC_InitStructure.NVIC_IRQChannel = UART3_IRQn;
-//    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
-//    NVIC_InitStructure.NVIC_IRQChannelSubPriority        = 1;
-//    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-//    NVIC_Initializes(&NVIC_InitStructure);
-//	
-//		USART_Interrput_Enable(UART3,USART_INT_RXDNE);
-    USART_Enable(UART3);
+  USART_InitStructure.BaudRate = 4000000l;
+  USART_InitStructure.WordLength = USART_WL_8B;
+  USART_InitStructure.StopBits = USART_STPB_1;
+  USART_InitStructure.Parity = USART_PE_NO;
+  USART_InitStructure.HardwareFlowControl = USART_HFCTRL_NONE;
+  USART_InitStructure.Mode = USART_MODE_RX | USART_MODE_TX;
+  USART_Initializes(UART3, &USART_InitStructure);
 
-		/*dma 中断发送使能*/
-    NVIC_InitStructure.NVIC_IRQChannel                   = DMA_Channel4_IRQn;
-	  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority   = 3;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority           = 3;
-    NVIC_InitStructure.NVIC_IRQChannelCmd                = ENABLE;
-    NVIC_Initializes(&NVIC_InitStructure);
+  //    NVIC_InitStructure.NVIC_IRQChannel = UART3_IRQn;
+  //    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
+  //    NVIC_InitStructure.NVIC_IRQChannelSubPriority        = 1;
+  //    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+  //    NVIC_Initializes(&NVIC_InitStructure);
+  //
+  //		USART_Interrput_Enable(UART3,USART_INT_RXDNE);
+  USART_Enable(UART3);
 
-		/*dma 数据发送完成中断使能*/
-    NVIC_InitStructure.NVIC_IRQChannel                   = DMA_Channel3_IRQn;
-	  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority   = 3;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority           = 3;
-    NVIC_InitStructure.NVIC_IRQChannelCmd                = ENABLE;
-    NVIC_Initializes(&NVIC_InitStructure);
+  /* DMA receive interrupt enable */
+  NVIC_InitStructure.NVIC_IRQChannel = DMA_Channel4_IRQn;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 3;
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 3;
+  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+  NVIC_Initializes(&NVIC_InitStructure);
 
-		Uart_DMA_config();
+  /* DMA transmit interrupt enable */
+  NVIC_InitStructure.NVIC_IRQChannel = DMA_Channel3_IRQn;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 3;
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 3;
+  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+  NVIC_Initializes(&NVIC_InitStructure);
+
+  Uart_DMA_config();
 }
 // ========================================================================
-// 函数名称：Send_Value_Uart
-// 输入参数：无
-// 输出参数：无
-// 扇    入：无
-// 扇    出：无
-// 函数描述：串口发送数据处理
+// Function Name: Send_Value_Uart
+// Description: Send data via UART
+// Input: Data buffer pointer and length
+// Output: None
+// Function: Transmit data through UART3 with blocking send
 // ========================================================================
-void Send_Value_Uart(uint8_t * pChar,int32_t len)
+void Send_Value_Uart(uint8_t *pChar, int32_t len)
 {
-	uint16_t i = 0;
-	for(i = 0;i<len;i++) 
-    {
-        USART_Data_Send(UART3,pChar[i]);
-        while(USART_Flag_Status_Get(UART3, USART_FLAG_TXDE) == RESET)
-            ;
-	}
+  uint16_t i = 0;
+  for (i = 0; i < len; i++)
+  {
+    USART_Data_Send(UART3, pChar[i]);
+    while (USART_Flag_Status_Get(UART3, USART_FLAG_TXDE) == RESET)
+      ;
+  }
 }
 // ========================================================================
-// 函数名称：printf
-// 输入参数：无
-// 输出参数：无
-// 扇    入：无
-// 扇    出：无
-// 函数描述：串口打印数据
+// Function Name: fputc
+// Description: Printf redirection to UART
+// Input: Character and file pointer
+// Output: Character sent
+// Function: Redirect printf output to UART3 for debugging
 // ========================================================================
 int fputc(int ch, FILE *f)
-{      
-	USART_Data_Send(UART3, (uint8_t) ch);
-  while(USART_Flag_Status_Get(UART3, USART_FLAG_TXDE) == RESET)
-            ;
-	return (ch);
+{
+  (void)f; // Unused parameter
+  USART_Data_Send(UART3, (uint8_t)ch);
+  while (USART_Flag_Status_Get(UART3, USART_FLAG_TXDE) == RESET)
+    ;
+  return (ch);
 }

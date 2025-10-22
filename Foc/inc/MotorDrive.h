@@ -53,68 +53,66 @@
 #include "i2c_drv.h"
 #include "oled.h"
 
-
 typedef struct MOTORBASE
 {
-	uint16_t CurrentBase;       // 电流基值
-	uint16_t VolatageBase;      // 电压基值
-	
-	// 保护阀值
-	uint16_t OverCurrent;       // 过流保护值
-	uint16_t OverVoltage;       // 过压保护值
-	uint16_t LackVoltage;       // 欠压保护值
-	uint16_t ElectUpVoltage;    // 上电缓冲电压
-	// 允许故障复位标志
-	uint16_t AllowReset;   		// 允许故障复位
-	
-	uint16_t Fun_DKp_Q13;  		// D轴KpQ13
-	uint16_t Fun_DKi_Q15;  		// D轴KiQ15
-	uint16_t Fun_DOutMax_Q15;   // D轴限幅Q15
-	uint16_t Fun_QKp_Q13;  		// Q轴KpQ13
-	uint16_t Fun_QKi_Q15;  		// Q轴KiQ15
-	uint16_t Fun_QOutMax_Q15;   // Q轴限幅Q15
-	
-	// 转速环参数
-	int16_t Fun_SpdOutMax;      // 转速环输出限幅
-	int16_t Fun_SpdKi;			// 转速环Ki
-	int16_t Fun_SpdKp;			// 转速环Kp
-	
-}MotorBase_Obj;
-typedef struct {
-    int16_t  Motor_pole;
-    int16_t  Pwm_freq;
-}Plate_Obj;
+	uint16_t CurrentBase;  // Current base value
+	uint16_t VolatageBase; // Voltage base value
+
+	// Current base value
+	uint16_t OverCurrent;	 // Overcurrent base value
+	uint16_t OverVoltage;	 // Overvoltage protection value
+	uint16_t LackVoltage;	 // Undervoltage protection value
+	uint16_t ElectUpVoltage; // Power supply detection voltage
+	// Power-on reset flag
+	uint16_t AllowReset; // Allow power-on reset
+
+	uint16_t Fun_DKp_Q13;	  // D-axis Kp in Q13 format
+	uint16_t Fun_DKi_Q15;	  // D-axis Ki in Q15 format
+	uint16_t Fun_DOutMax_Q15; // D-axis output limit in Q15 format
+	uint16_t Fun_QKp_Q13;	  // Q-axis Kp in Q13 format
+	uint16_t Fun_QKi_Q15;	  // Q-axis Ki in Q15 format
+	uint16_t Fun_QOutMax_Q15; // Q-axis output limit in Q15 format
+
+	// Speed loop parameters
+	int16_t Fun_SpdOutMax; // Speed loop output limit
+	int16_t Fun_SpdKi;	   // Speed loop Ki
+	int16_t Fun_SpdKp;	   // Speed loop Kp
+
+} MotorBase_Obj;
+typedef struct
+{
+	int16_t Motor_pole;
+	int16_t Pwm_freq;
+} Plate_Obj;
 typedef struct _DRIVEROBJ_
 {
-	Svpwm_Obj               Svpwm;
-    Plate_Obj               Plate;
-	MotorFlag_Obj		    Flag;
-	MotorBase_Obj 		    MotorBaseObj;
-	Data_Obj			    DataObj;
-	CurLoop_Obj			    CurLoop;
-	Brushless_Obj		    BrushlessObj;
-	PiCtrl_Obj			    SpeedObj;
-    
-	uint16_t 		        SystemCount;
-	uint16_t    	        MotorState;
-	uint8_t 		        ClearOnce;
-	uint16_t		        SoftStartStopCtrl;
-	uint8_t				    DelayCnt;
-    uint8_t                 VieFlag;
-    uint16_t                ViewValue[10];
-    
+	Svpwm_Obj Svpwm;
+	Plate_Obj Plate;
+	MotorFlag_Obj Flag;
+	MotorBase_Obj MotorBaseObj;
+	Data_Obj DataObj;
+	CurLoop_Obj CurLoop;
+	Brushless_Obj BrushlessObj;
+	PiCtrl_Obj SpeedObj;
 
-    HallCalc_t                          HallCalc;
-    HallStudy_t                         HallStudy; 
-    
-    EncObserver_t                       EncCalc;
+	uint16_t SystemCount;
+	uint16_t MotorState;
+	uint8_t ClearOnce;
+	uint16_t SoftStartStopCtrl;
+	uint8_t DelayCnt;
+	uint8_t VieFlag;
+	uint16_t ViewValue[10];
+
+	HallCalc_t HallCalc;
+	HallStudy_t HallStudy;
+
+	EncObserver_t EncCalc;
 } Motor_Obj;
 
 void FocParamReIni(Motor_Obj *pObj);
-    
+
 #define RUN_STATE 2
 #define SHORTPHASE_STATE 1
 #define STOP_STATE 0
 
-#endif 
-
+#endif

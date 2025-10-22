@@ -32,7 +32,7 @@
  *
  * @copyright Copyright (c) 2019, Nations Technologies Inc. All rights reserved.
  */
- 
+
 #include <stdint.h>
 #include <math.h>
 #include "MotorDrive.h"
@@ -40,8 +40,8 @@
 #include "string.h"
 #include "stdlib.h"
 
-//initiall and reset
-void HallIntial(HallCalc_t * pHallCalc)
+// initiall and reset
+void HallIntial(HallCalc_t *pHallCalc)
 {
     uint8_t i = 0;
     pHallCalc->AngleCalTickCnt = 0;
@@ -51,147 +51,141 @@ void HallIntial(HallCalc_t * pHallCalc)
     pHallCalc->AngleBaseCntTotal = 0;
     pHallCalc->HallAngle = 0;
 
-    for(;i<MaxSpdBuf;i++)
+    for (; i < MaxSpdBuf; i++)
         pHallCalc->SpeedBuf[i] = 0;
     pHallCalc->Spbi = 0;
-    
-    pHallCalc->HallAngleOffset = 16384;	//90°
-    for(i = 1;i<6;i++)
-        pHallCalc->HallFixAngle[i] = pHallCalc->HallFixAngle[i-1]+10922;	//24334  (24334+10922*1)=35256~-30280 46178~-19358(初始位置角) 57100~-8436 68022~2486 78944~13408
+
+    pHallCalc->HallAngleOffset = 16384; // 90 degrees
+    for (i = 1; i < 6; i++)
+        pHallCalc->HallFixAngle[i] = pHallCalc->HallFixAngle[i - 1] + 10922; // 24334  (24334+10922*1)=35256~-30280 46178~-19358(initial position angle) 57100~-8436 68022~2486 78944~13408
 
     pHallCalc->Delay = 1000;
 }
 
-
-int32_t HallSpeedGet(HallCalc_t * pHallCalc)
+int32_t HallSpeedGet(HallCalc_t *pHallCalc)
 {
     int16_t i = 0;
-    int32_t sum=0;
+    int32_t sum = 0;
     int32_t Speed = 0;
     int32_t AngleCalTickCnt = pHallCalc->AngleCalTickCnt;
-    if(AngleCalTickCnt != 0)
+    if (AngleCalTickCnt != 0)
     {
-        Speed = pHallCalc->Pwm_freq*10/AngleCalTickCnt/pHallCalc->Pols;
-        
-        if(pHallCalc->Spbi >= MaxSpdBuf)
+        Speed = pHallCalc->Pwm_freq * 10 / AngleCalTickCnt / pHallCalc->Pols;
+
+        if (pHallCalc->Spbi >= MaxSpdBuf)
             pHallCalc->Spbi = 0;
-        pHallCalc->SpeedBuf[pHallCalc->Spbi]= Speed;
+        pHallCalc->SpeedBuf[pHallCalc->Spbi] = Speed;
         pHallCalc->Spbi++;
-        for (;i<MaxSpdBuf;i++)
-            sum+=pHallCalc->SpeedBuf[i];
-        pHallCalc->HallSpeed = sum/MaxSpdBuf;
-        pHallCalc->HallSpeedAvg = ((pHallCalc->HallSpeedAvg*63<<4) + (pHallCalc->HallSpeed<<4)) >> 10;	//0.984 0.016 速度滤波
+        for (; i < MaxSpdBuf; i++)
+            sum += pHallCalc->SpeedBuf[i];
+        pHallCalc->HallSpeed = sum / MaxSpdBuf;
+        pHallCalc->HallSpeedAvg = ((pHallCalc->HallSpeedAvg * 63 << 4) + (pHallCalc->HallSpeed << 4)) >> 10; // 0.984 0.016 speed filtering
     }
-    if(pHallCalc->Delay > 0)
+    if (pHallCalc->Delay > 0)
     {
         pHallCalc->Delay--;
         return 0;
     }
-    if(pHallCalc->SpeedBuf[MaxSpdBuf-1] != 0)
-        return pHallCalc->HallSpeedAvg;  
+    if (pHallCalc->SpeedBuf[MaxSpdBuf - 1] != 0)
+        return pHallCalc->HallSpeedAvg;
     return 0;
 }
 
-
-//Hall Angle study
-//if you need different speed,you can input different  ForceAngInc,such as 50,100 ...
-int16_t HallAngleStudy(HallStudy_t * pHallStudy,int16_t ForceAngInc/*=0*/)
+// Hall Angle study
+// if you need different speed,you can input different  ForceAngInc,such as 50,100 ...
+int16_t HallAngleStudy(HallStudy_t *pHallStudy, int16_t ForceAngInc /*=0*/)
 {
-    if(ForceAngInc == 0)
+    if (ForceAngInc == 0)
     {
-        if(pHallStudy->ForceAngInc == 0)
-            pHallStudy->ForceAngInc = 1;//default angle inc
+        if (pHallStudy->ForceAngInc == 0)
+            pHallStudy->ForceAngInc = 1; // default angle inc
     }
     else
     {
         pHallStudy->ForceAngInc = ForceAngInc;
     }
-    if(pHallStudy->HallTmpPre != pHallStudy->HallTmp)
+    if (pHallStudy->HallTmpPre != pHallStudy->HallTmp)
     {
-        if(pHallStudy->Filter++ > 100)
+        if (pHallStudy->Filter++ > 100)
         {
             pHallStudy->Filter = 0;
             pHallStudy->HallTmpPre = pHallStudy->HallTmp;
-            if(pHallStudy->Halli >= HALL_STUDY_LEN)
+            if (pHallStudy->Halli >= HALL_STUDY_LEN)
                 pHallStudy->Halli = 0;
             pHallStudy->HallBuf[pHallStudy->Halli] = pHallStudy->HallTmp;
             pHallStudy->AngBuf[pHallStudy->Halli] = pHallStudy->HallAngle;
             pHallStudy->Halli++;
         }
     }
-    pHallStudy->HallAngle += pHallStudy->ForceAngInc;//force run to study line sequence and fix angle
+    pHallStudy->HallAngle += pHallStudy->ForceAngInc; // force run to study line sequence and fix angle
     return pHallStudy->HallAngle;
 }
 
-//Hall Angle run calc
-int16_t HallAngleCalc(HallCalc_t * pHallCalc,int8_t HallIo)
+// Hall Angle run calc
+int16_t HallAngleCalc(HallCalc_t *pHallCalc, int8_t HallIo)
 {
-    //int16_t HallAngle = 0;
+    // int16_t HallAngle = 0;
     uint8_t i = 0;
     pHallCalc->HallIo = HallIo;
 
-    for(;i<6;i++)
+    for (; i < 6; i++)
     {
-        if(pHallCalc->HallIo == pHallCalc->HallFixLineSeq[i])
+        if (pHallCalc->HallIo == pHallCalc->HallFixLineSeq[i])
         {
             break;
         }
     }
-    if(i >= 6) i = 0;
+    if (i >= 6)
+        i = 0;
     pHallCalc->Index = i;
-    
-    if(pHallCalc->AngleCalTickInc < 1000)//10000/(1000*6) = 1.66Hz 在霍尔信号发生变化后清零
+
+    if (pHallCalc->AngleCalTickInc < 1000) // 10000/(1000*6) = 1.66Hz Hall signal frequency change counter
         pHallCalc->AngleCalTickInc++;
     else
         pHallCalc->PosNegCnt = 0;
-    
-    if(pHallCalc->IndexOld != pHallCalc->Index)
+
+    if (pHallCalc->IndexOld != pHallCalc->Index)
     {
         uint8_t tmp = pHallCalc->Index - pHallCalc->IndexOld;
         pHallCalc->AngleCalTickCntPre = pHallCalc->AngleCalTickInc;
         int32_t cnt = pHallCalc->AngleCalTickCnt;
-        pHallCalc->AngleCalTickCnt = (tmp == 1 || tmp == 251)?pHallCalc->AngleCalTickInc:-pHallCalc->AngleCalTickInc;	//正反转判定并赋值测速Cnt	
-				if(pHallCalc->AngleCalTickCnt >= -5 && pHallCalc->AngleCalTickCnt <= 5)
-				{
-					pHallCalc->AngleCalTickCnt = 1000;
-				}			
-        if((cnt > 0 && pHallCalc->AngleCalTickCnt > 0) || (cnt < 0 && pHallCalc->AngleCalTickCnt < 0)) //上一次计数和本次计数都存在 霍尔信号发生了变化
+        pHallCalc->AngleCalTickCnt = (tmp == 1 || tmp == 251) ? pHallCalc->AngleCalTickInc : -pHallCalc->AngleCalTickInc; // Forward/reverse rotation judgment and value assignment to Cnt
+        if (pHallCalc->AngleCalTickCnt >= -5 && pHallCalc->AngleCalTickCnt <= 5)
         {
-            if(pHallCalc->PosNegCnt < 100)
+            pHallCalc->AngleCalTickCnt = 1000;
+        }
+        if ((cnt > 0 && pHallCalc->AngleCalTickCnt > 0) || (cnt < 0 && pHallCalc->AngleCalTickCnt < 0)) // Previous and current calculations same direction, Hall signal direction changed
+        {
+            if (pHallCalc->PosNegCnt < 100)
                 pHallCalc->PosNegCnt++;
         }
-        else pHallCalc->PosNegCnt = 0;
+        else
+            pHallCalc->PosNegCnt = 0;
         pHallCalc->AngleCalTickInc = 0;
         pHallCalc->IndexOld = pHallCalc->Index;
         pHallCalc->AngleBaseCntTotal++;
     }
-    
-    
-    if(pHallCalc->PosNegCnt >= 2)
+
+    if (pHallCalc->PosNegCnt >= 2)
     {
         int32_t IncSet = 0;
-        if(pHallCalc->AngleCalTickInc < pHallCalc->AngleCalTickCntPre)	//霍尔信号发生了变化
+        if (pHallCalc->AngleCalTickInc < pHallCalc->AngleCalTickCntPre) // Hall signal direction changed
         {
-            IncSet = 10922*pHallCalc->AngleCalTickInc / pHallCalc->AngleCalTickCntPre;
+            IncSet = 10922 * pHallCalc->AngleCalTickInc / pHallCalc->AngleCalTickCntPre;
         }
-        else 
-            IncSet = 10922;	//60°
-        
-        if(pHallCalc->AngleCalTickCnt > 0)//Angel Inc
-            pHallCalc->HallAngle = pHallCalc->HallFixAngle[pHallCalc->Index] + pHallCalc->HallAngleOffset  + IncSet;	//x + 90° + 60°或0°
-        else//Angel Dec
-            pHallCalc->HallAngle = pHallCalc->HallFixAngle[pHallCalc->IndexOld] + pHallCalc->HallAngleOffset  - IncSet;
-    }    
+        else
+            IncSet = 10922; // 60 degrees
+
+        if (pHallCalc->AngleCalTickCnt > 0)                                                                         // Angel Inc
+            pHallCalc->HallAngle = pHallCalc->HallFixAngle[pHallCalc->Index] + pHallCalc->HallAngleOffset + IncSet; // x + 90掳 + 60掳~0掳
+        else                                                                                                        // Angel Dec
+            pHallCalc->HallAngle = pHallCalc->HallFixAngle[pHallCalc->IndexOld] + pHallCalc->HallAngleOffset - IncSet;
+    }
     else
     {
-        pHallCalc->HallAngle = pHallCalc->HallFixAngle[pHallCalc->Index] + pHallCalc->HallAngleOffset + 5461;	//-19357初始位置角
+        pHallCalc->HallAngle = pHallCalc->HallFixAngle[pHallCalc->Index] + pHallCalc->HallAngleOffset + 5461; //-19357 initial position angle
     }
-    
-    //pHallCalc->HallAngle = HallAngle;
+
+    // pHallCalc->HallAngle = HallAngle;
     return pHallCalc->HallAngle;
 }
-
-
-
-
-
