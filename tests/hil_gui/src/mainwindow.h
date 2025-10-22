@@ -6,13 +6,6 @@
 #include <QLineSeries>
 #include "motor_simulator.h"
 
-QT_BEGIN_NAMESPACE
-namespace Ui
-{
-    class MainWindow;
-}
-QT_END_NAMESPACE
-
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -34,7 +27,6 @@ private:
     void setupCharts();
     void updateCharts();
 
-    Ui::MainWindow *ui;
     MotorSimulator *m_simulator;
 
     // Real-time charts

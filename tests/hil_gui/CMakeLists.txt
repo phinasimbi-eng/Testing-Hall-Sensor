@@ -5,10 +5,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
+# UI files not used - building UI programmatically
 
 # Find Qt6
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Charts SerialPort Network)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Charts SerialPort)
 
 # Source files
 set(SOURCES
@@ -30,15 +30,10 @@ set(HEADERS
     src/test_sequence.h
 )
 
-set(UI_FILES
-    ui/mainwindow.ui
-)
-
 # Executable
 add_executable(${PROJECT_NAME}
     ${SOURCES}
     ${HEADERS}
-    ${UI_FILES}
 )
 
 # Link Qt libraries
@@ -47,7 +42,6 @@ target_link_libraries(${PROJECT_NAME}
     Qt6::Widgets
     Qt6::Charts
     Qt6::SerialPort
-    Qt6::Network
 )
 
 # Include directories

@@ -1,15 +1,18 @@
-# Motor Control HIL Test GUI
+# Motor Control Virtual Test Simulator
 
-Qt-based Hardware-in-Loop testing tool for N32G430 BLDC motor controller.
+Qt-based **pure software simulation** tool for N32G430 BLDC motor controller.
+
+**Note:** This is a development/testing tool that runs entirely in software on this Mac.
+Hardware testing with ST-Link will be done on a separate Windows PC with Keil.
 
 ## Features
 
-- **Virtual Motor Simulation:** Physics-based BLDC motor model
+- **Virtual Motor Simulation:** Physics-based BLDC motor model (no hardware needed!)
 - **Real-time Monitoring:** Speed, current, voltage, position plots
-- **ST-Link Integration:** Debug interface via OpenOCD/GDB
-- **UART Console:** Monitor firmware debug output
-- **Fault Injection:** Test overcurrent, overvoltage, Hall faults
+- **Control Logic Testing:** Simulate FOC algorithms, PID loops, state machines
+- **Fault Injection:** Test overcurrent, overvoltage, Hall faults safely
 - **Test Automation:** Scripted test sequences
+- **Export Results:** Generate test reports for hardware validation
 
 ## Build Instructions
 
@@ -18,8 +21,6 @@ Qt-based Hardware-in-Loop testing tool for N32G430 BLDC motor controller.
 ```bash
 # macOS
 brew install qt@6
-brew install openocd
-brew install arm-none-eabi-gdb
 
 # Set up environment
 export PATH="/opt/homebrew/opt/qt@6/bin:$PATH"
@@ -57,20 +58,24 @@ MotorTestGUI/
 
 ## Usage
 
-1. **Connect ST-Link** to N32G430
-2. **Launch GUI:** `./MotorTestGUI`
-3. **Start OpenOCD server** (GUI can auto-start)
-4. **Load firmware:** Flash via GUI or manually
-5. **Run tests:** Select test sequence or manual control
+1. **Launch GUI:** `./MotorTestGUI`
+2. **Configure virtual motor parameters** (pole pairs, resistance, inductance, etc.)
+3. **Load control parameters** from your firmware code (paste UserParam.h values)
+4. **Run test sequences:**
+   - Open Loop Test: Verify SVPWM generation
+   - Closed Loop Test: Verify current/speed controllers
+   - Fault Injection: Test protection logic
+   - Performance Test: Step response, frequency response
+5. **Export results** for documentation
+6. **Transfer validated firmware to Windows PC** for hardware testing with Keil + ST-Link
 
 ## Test Sequences
 
-- **Smoke Test:** Basic GPIO/UART/ADC verification
-- **PWM Test:** Verify all 6 PWM channels
-- **Open Loop:** Test SVPWM generation
-- **Closed Loop:** Test current/speed controllers
-- **Fault Response:** Inject faults, verify protection
-- **Performance:** Step response, frequency response
+- **Smoke Test:** Parameter validation, initialization checks
+- **Open Loop:** Test SVPWM generation with virtual Hall sensors
+- **Closed Loop:** Test current/speed controllers with virtual motor physics
+- **Fault Response:** Inject faults, verify software protection triggers
+- **Performance:** Step response, overshoot, settling time analysis
 
 ## Virtual Motor Parameters
 
@@ -81,5 +86,3 @@ Matches test motor specs (configure in GUI):
 - Inductance: 0.5mH
 - Ke (back-EMF): 0.01 V/rpm
 - Inertia: 0.0001 kg⋅m²
-
-

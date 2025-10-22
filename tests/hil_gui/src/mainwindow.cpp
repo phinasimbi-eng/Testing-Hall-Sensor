@@ -14,8 +14,8 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), m_simulator(new MotorSimulator(this)), m_time(0.0)
 {
+    setupCharts(); // Must create charts BEFORE setupUI uses them!
     setupUI();
-    setupCharts();
 
     // Connect simulator signals
     connect(m_simulator, &MotorSimulator::stateUpdated,
