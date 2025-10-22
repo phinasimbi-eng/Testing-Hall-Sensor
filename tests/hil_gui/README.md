@@ -81,3 +81,5 @@ Matches test motor specs (configure in GUI):
 - Inductance: 0.5mH
 - Ke (back-EMF): 0.01 V/rpm
 - Inertia: 0.0001 kg⋅m²
+
+
